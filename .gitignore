@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Chrome Extension Development
+*.crx
+*.pem
+.vscode/
+
+# Node.js (测试依赖)
+node_modules/
+package-lock.json
+
+# Test files
+bookmarks_2025_5_29.html
+sample-bookmarks.html
+
+# Documentation (保留中文文档)
+# 解决方案说明.md
+# 开发指南.md 

@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "极简书签管理器",
+  "version": "1.0.0",
+  "description": "简洁优雅的书签管理插件，支持Chrome书签导入、搜索和组织管理",
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "tabs",
+    "activeTab",
+    "notifications",
+    "contextMenus"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "书签管理器"
+  },
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ]
+} 
