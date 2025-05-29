@@ -7,16 +7,19 @@ class BookmarkManager {
     this.currentEditingId = null;
     this.contextMenuTarget = null;
     this.nextId = 1; // 用于生成唯一ID
+    this.currentMode = 'plugin'; // 'plugin' 或 'chrome'
     
     this.init();
   }
 
   // 初始化
   async init() {
+    console.log('BookmarkManager初始化开始');
     this.bindEvents();
     await this.loadExpandedState();
     await this.loadBookmarksFromStorage(); // 恢复为本地存储
     this.hideLoading();
+    console.log('BookmarkManager初始化完成');
   }
 
   // 绑定事件监听器
@@ -50,6 +53,18 @@ class BookmarkManager {
     document.getElementById('addBookmarkBtn').addEventListener('click', () => {
       this.addCurrentTab();
     });
+
+    // 切换显示模式
+    const toggleModeBtn = document.getElementById('toggleModeBtn');
+    if (toggleModeBtn) {
+      console.log('找到切换模式按钮，绑定事件');
+      toggleModeBtn.addEventListener('click', () => {
+        console.log('切换按钮被点击');
+        this.toggleDisplayMode();
+      });
+    } else {
+      console.error('未找到toggleModeBtn元素');
+    }
 
     // 右键菜单
     document.addEventListener('contextmenu', (e) => {
@@ -129,6 +144,86 @@ class BookmarkManager {
     }
   }
 
+  // 获取Chrome浏览器书签
+  async getChromeBookmarks() {
+    try {
+      const bookmarkTree = await chrome.bookmarks.getTree();
+      return this.processChromeBookmarkTree(bookmarkTree);
+    } catch (error) {
+      console.error('获取Chrome书签失败:', error);
+      this.showStatus('获取Chrome书签失败', 'error');
+      return [];
+    }
+  }
+
+  // 处理Chrome书签树
+  processChromeBookmarkTree(nodes) {
+    const results = [];
+    for (const node of nodes) {
+      // 跳过根节点（id为'0'）
+      if (node.id === '0') {
+        if (node.children) {
+          results.push(...this.processChromeBookmarkTree(node.children));
+        }
+        continue;
+      }
+      
+      // 处理有标题的节点
+      if (node.title) {
+        const processedNode = {
+          id: node.id,
+          parentId: node.parentId,
+          title: node.title,
+          url: node.url,
+          dateAdded: node.dateAdded,
+          children: node.children ? this.processChromeBookmarkTree(node.children) : [],
+          isFolder: !node.url,
+          isChromeBookmark: true // 标记为Chrome书签
+        };
+        results.push(processedNode);
+      }
+    }
+    return results;
+  }
+
+  // 删除Chrome浏览器书签
+  async deleteChromeBookmark(bookmarkId) {
+    try {
+      await chrome.bookmarks.remove(bookmarkId);
+      this.showStatus('✅ Chrome书签删除成功', 'success');
+      return true;
+    } catch (error) {
+      console.error('删除Chrome书签失败:', error);
+      if (error.message.includes('not found')) {
+        this.showStatus('❌ 书签不存在，可能已被删除', 'error');
+      } else if (error.message.includes('Cannot remove')) {
+        this.showStatus('❌ 无法删除系统文件夹', 'error');
+      } else {
+        this.showStatus('❌ 删除Chrome书签失败', 'error');
+      }
+      return false;
+    }
+  }
+
+  // 删除Chrome文件夹（包含子项）
+  async deleteChromeFolderRecursively(folderId) {
+    try {
+      await chrome.bookmarks.removeTree(folderId);
+      this.showStatus('✅ Chrome文件夹删除成功', 'success');
+      return true;
+    } catch (error) {
+      console.error('删除Chrome文件夹失败:', error);
+      if (error.message.includes('not found')) {
+        this.showStatus('❌ 文件夹不存在，可能已被删除', 'error');
+      } else if (error.message.includes('Cannot remove')) {
+        this.showStatus('❌ 无法删除系统文件夹（如书签栏）', 'error');
+      } else {
+        this.showStatus('❌ 删除Chrome文件夹失败', 'error');
+      }
+      return false;
+    }
+  }
+
   // 保存书签到本地存储
   async saveBookmarksToStorage() {
     try {
@@ -194,7 +289,12 @@ class BookmarkManager {
         node.title.toLowerCase().includes(this.searchQuery.toLowerCase());
 
       // 简化图标处理，避免favicon加载错误
-      const iconHtml = node.isFolder ? '📁' : '🔗';
+      let iconHtml = node.isFolder ? '📁' : '🔗';
+      
+      // 如果是Chrome书签，添加特殊标识
+      if (node.isChromeBookmark) {
+        iconHtml = node.isFolder ? '📁🌐' : '🔗🌐';
+      }
 
       const childrenHtml = hasChildren && (isExpanded || this.searchQuery) ?
         `<div class="folder-children ${!isExpanded && !this.searchQuery ? 'collapsed' : ''}">
@@ -203,9 +303,10 @@ class BookmarkManager {
 
       return `
         <div class="bookmark-node" data-id="${node.id}">
-          <div class="bookmark-item ${isHighlighted ? 'highlighted' : ''}" 
+          <div class="bookmark-item ${isHighlighted ? 'highlighted' : ''} ${node.isChromeBookmark ? 'chrome-bookmark' : ''}" 
                data-id="${node.id}" data-url="${node.url || ''}" 
-               data-title="${node.title}" data-is-folder="${node.isFolder}">
+               data-title="${node.title}" data-is-folder="${node.isFolder}"
+               data-is-chrome-bookmark="${node.isChromeBookmark || false}">
             ${hasChildren ? 
               `<span class="folder-toggle ${isExpanded ? 'expanded' : ''}" data-id="${node.id}">▶</span>` : 
               '<span class="folder-toggle"></span>'
@@ -215,6 +316,7 @@ class BookmarkManager {
             </div>
             <span class="bookmark-title">${node.title}</span>
             ${node.url ? `<span class="bookmark-url">${this.getDomain(node.url)}</span>` : ''}
+            ${node.isChromeBookmark ? '<span class="chrome-badge">Chrome</span>' : ''}
           </div>
           ${childrenHtml}
         </div>
@@ -307,17 +409,38 @@ class BookmarkManager {
     const menu = document.getElementById('contextMenu');
     const isFolder = target.dataset.isFolder === 'true';
     const hasUrl = target.dataset.url;
+    const isChromeBookmark = target.dataset.isChromeBookmark === 'true';
     
     // 根据类型显示/隐藏菜单项
     const openItem = menu.querySelector('[data-action="open"]');
     const openNewTabItem = menu.querySelector('[data-action="open-new-tab"]');
+    const editItem = menu.querySelector('[data-action="edit"]');
+    const deleteItem = menu.querySelector('[data-action="delete"]');
+    const chromeDeleteItem = menu.querySelector('[data-action="delete-chrome"]');
+    const deleteText = deleteItem.querySelector('.delete-text');
     
+    // 显示/隐藏打开相关菜单
     if (isFolder || !hasUrl) {
       openItem.style.display = 'none';
       openNewTabItem.style.display = 'none';
     } else {
       openItem.style.display = 'flex';
       openNewTabItem.style.display = 'flex';
+    }
+    
+    // 根据书签类型调整菜单项
+    if (isChromeBookmark) {
+      // Chrome书签：禁用编辑，显示警告删除
+      editItem.style.display = 'none';
+      deleteText.textContent = '删除（危险）';
+      deleteText.style.color = '#dc3545';
+      chromeDeleteItem.style.display = 'flex';
+    } else {
+      // 插件书签：正常显示
+      editItem.style.display = 'flex';
+      deleteText.textContent = '删除';
+      deleteText.style.color = '';
+      chromeDeleteItem.style.display = 'none';
     }
     
     this.contextMenuTarget = target;
@@ -351,6 +474,7 @@ class BookmarkManager {
     const url = this.contextMenuTarget.dataset.url;
     const title = this.contextMenuTarget.dataset.title;
     const isFolder = this.contextMenuTarget.dataset.isFolder === 'true';
+    const isChromeBookmark = this.contextMenuTarget.dataset.isChromeBookmark === 'true';
     
     this.hideContextMenu();
     
@@ -369,10 +493,51 @@ class BookmarkManager {
           break;
           
         case 'delete':
-          if (confirm(`确定要删除 "${title}" 吗？`)) {
-            await this.deleteBookmark(id);
-            await this.loadBookmarks();
-            this.showStatus('删除成功');
+          if (isChromeBookmark) {
+            // 删除Chrome书签
+            const confirmMessage = isFolder 
+              ? `确定要删除Chrome文件夹 "${title}" 及其所有子项吗？` 
+              : `确定要删除Chrome书签 "${title}" 吗？`;
+            
+            if (confirm(confirmMessage)) {
+              const success = isFolder 
+                ? await this.deleteChromeFolderRecursively(id)
+                : await this.deleteChromeBookmark(id);
+              
+              if (success) {
+                // 重新加载当前显示模式
+                if (this.currentMode === 'chrome') {
+                  await this.loadChromeBookmarks();
+                }
+              }
+            }
+          } else {
+            // 删除插件书签
+            if (confirm(`确定要删除 "${title}" 吗？`)) {
+              await this.deleteBookmark(id);
+              await this.loadBookmarks();
+              this.showStatus('删除成功');
+            }
+          }
+          break;
+          
+        case 'delete-chrome':
+          // 专门的删除Chrome书签菜单项
+          const confirmMessage = isFolder 
+            ? `确定要从Chrome中删除文件夹 "${title}" 及其所有子项吗？此操作不可撤销！` 
+            : `确定要从Chrome中删除书签 "${title}" 吗？此操作不可撤销！`;
+          
+          if (confirm(confirmMessage)) {
+            const success = isFolder 
+              ? await this.deleteChromeFolderRecursively(id)
+              : await this.deleteChromeBookmark(id);
+            
+            if (success) {
+              // 重新加载Chrome书签显示
+              if (this.currentMode === 'chrome') {
+                await this.loadChromeBookmarks();
+              }
+            }
           }
           break;
           
@@ -857,6 +1022,49 @@ class BookmarkManager {
       }
     }
     return false;
+  }
+
+  // 加载Chrome书签
+  async loadChromeBookmarks() {
+    try {
+      this.showLoading();
+      this.showStatus('正在加载Chrome书签...', 'info');
+      
+      const chromeBookmarks = await this.getChromeBookmarks();
+      this.bookmarks = chromeBookmarks;
+      
+      this.showStatus('Chrome书签加载成功', 'success');
+      this.renderBookmarks();
+    } catch (error) {
+      console.error('加载Chrome书签失败:', error);
+      this.showStatus('加载Chrome书签失败', 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  // 切换显示模式
+  async toggleDisplayMode() {
+    console.log('toggleDisplayMode被调用，当前模式:', this.currentMode);
+    const toggleBtn = document.getElementById('toggleModeBtn');
+    
+    if (this.currentMode === 'plugin') {
+      // 切换到Chrome书签模式
+      this.currentMode = 'chrome';
+      // 只更新文本节点，保留图标
+      toggleBtn.innerHTML = '<span class="icon">🔄</span>Chrome书签';
+      await this.loadChromeBookmarks();
+      this.showStatus('已切换到Chrome书签模式', 'success');
+    } else {
+      // 切换到插件书签模式
+      this.currentMode = 'plugin';
+      // 只更新文本节点，保留图标
+      toggleBtn.innerHTML = '<span class="icon">🔄</span>插件书签';
+      await this.loadBookmarksFromStorage();
+      this.showStatus('已切换到插件书签模式', 'success');
+    }
+    
+    this.renderBookmarks();
   }
 }
 

@@ -228,13 +228,13 @@ body {
 }
 
 .bookmark-url {
-  font-size: 11px;
+  font-size: 12px;
   color: #5f6368;
-  margin-left: 8px;
-  max-width: 120px;
-  overflow: hidden;
+  margin-left: auto;
   text-overflow: ellipsis;
+  overflow: hidden;
   white-space: nowrap;
+  max-width: 150px;
 }
 
 .folder-children {
@@ -470,4 +470,36 @@ body {
   .btn {
     justify-content: center;
   }
+}
+
+/* Chrome书签特殊样式 */
+.bookmark-item.chrome-bookmark {
+  border-left: 3px solid #4285f4;
+  background-color: #f8f9ff;
+}
+
+.bookmark-item.chrome-bookmark:hover {
+  background-color: #e8f0fe;
+}
+
+.chrome-badge {
+  background: #4285f4;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-left: auto;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* 右键菜单中Chrome删除项的特殊样式 */
+.menu-item.chrome-delete-item {
+  border-top: 1px solid #fee;
+  background-color: #fef2f2;
+}
+
+.menu-item.chrome-delete-item:hover {
+  background-color: #fecaca;
 } 
