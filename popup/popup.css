@@ -11,16 +11,21 @@ body {
   line-height: 1.5;
   color: #202124;
   background: #ffffff;
-  width: 400px;
-  height: 600px;
+  width: 450px;       /* 设置固定宽度 */
+  height: 800px;      /* 设置固定高度，更大的弹窗 */
   overflow: hidden;
+  /* 独立窗口优化 */
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* 容器布局 */
 .container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 800px;      /* 与body高度保持一致 */
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 /* 顶部操作栏 */
@@ -476,10 +481,7 @@ body {
 
 /* 响应式调整 */
 @media (max-width: 380px) {
-  body {
-    width: 320px;
-  }
-  
+  /* 移除强制宽度限制，保持我们设置的大尺寸 */
   .action-buttons {
     flex-direction: column;
   }
