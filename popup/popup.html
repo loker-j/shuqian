@@ -46,6 +46,24 @@
       </div>
     </div>
 
+    <!-- 调试日志区域（新增） -->
+    <div class="debug-section">
+      <button id="debugToggle" class="debug-toggle">🔍 显示调试日志</button>
+      <div id="debugLog" class="debug-log" style="display: none;">
+        <div class="debug-header">
+          <span>🛠️ 调试信息</span>
+          <div>
+            <button id="testEventBtn" class="clear-log-btn" style="margin-right: 4px;">测试事件</button>
+            <button id="clearDebugLog" class="clear-log-btn">清空</button>
+          </div>
+        </div>
+        <div id="debugContent" class="debug-content"></div>
+      </div>
+    </div>
+
+    <!-- 状态消息 -->
+    <div id="statusMessage" class="status-message"></div>
+
     <!-- 右键菜单 -->
     <div id="contextMenu" class="context-menu" style="display: none;">
       <div class="menu-item" data-action="open">
@@ -100,9 +118,20 @@
       </div>
     </div>
 
-    <!-- 底部提示 -->
-    <div class="footer">
-      <div id="statusMessage" class="status-message"></div>
+    <!-- 自定义确认对话框（DIA浏览器兼容性） -->
+    <div id="confirmModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="confirmModalTitle">确认操作</h3>
+        </div>
+        <div class="modal-body">
+          <p id="confirmModalMessage"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmModalCancel" class="btn btn-secondary">取消</button>
+          <button id="confirmModalConfirm" class="btn btn-danger">确定</button>
+        </div>
+      </div>
     </div>
   </div>
 

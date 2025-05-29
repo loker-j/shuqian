@@ -434,27 +434,44 @@ body {
   align-items: center;
 }
 
+/* 状态消息样式 */
 .status-message {
+  position: fixed;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
   font-size: 12px;
-  color: #5f6368;
+  text-align: center;
   opacity: 0;
-  transition: opacity 0.3s;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 1000;
 }
 
 .status-message.show {
   opacity: 1;
+  transform: translateY(0);
 }
 
 .status-message.success {
-  color: #1e8e3e;
+  background: #e8f5e8;
+  color: #137333;
+  border: 1px solid #ceead6;
 }
 
 .status-message.error {
+  background: #fce8e6;
   color: #d93025;
+  border: 1px solid #f4c7c3;
 }
 
 .status-message.info {
+  background: #e8f0fe;
   color: #1a73e8;
+  border: 1px solid #aecbfa;
 }
 
 /* 响应式调整 */
@@ -502,4 +519,149 @@ body {
 
 .menu-item.chrome-delete-item:hover {
   background-color: #fecaca;
+}
+
+/* 调试日志区域样式（新增） */
+.debug-section {
+  border-top: 1px solid #e1e5e9;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.debug-toggle {
+  width: 100%;
+  padding: 8px;
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.debug-toggle:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.debug-log {
+  margin-top: 8px;
+  border: 1px solid #e1e5e9;
+  border-radius: 4px;
+  background: #f8f9fa;
+  max-height: 200px;
+  overflow: hidden;
+}
+
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #e9ecef;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.debug-content {
+  padding: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.debug-entry {
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  word-wrap: break-word;
+}
+
+.debug-timestamp {
+  color: #6c757d;
+  margin-right: 6px;
+}
+
+.debug-level-info {
+  color: #0d6efd;
+}
+
+.debug-level-success {
+  color: #198754;
+  background: #d1e7dd;
+}
+
+.debug-level-warn {
+  color: #fd7e14;
+  background: #fff3cd;
+}
+
+.debug-level-error {
+  color: #dc3545;
+  background: #f8d7da;
+}
+
+.clear-log-btn {
+  padding: 4px 8px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.clear-log-btn:hover {
+  background: #5a6268;
+}
+
+/* 自定义确认对话框样式（DIA浏览器兼容性） */
+#confirmModal .modal-content {
+  min-width: 320px;
+  max-width: 450px;
+}
+
+#confirmModal .modal-header h3 {
+  color: #dc3545;
+  font-size: 16px;
+}
+
+#confirmModal .modal-body {
+  padding: 20px;
+}
+
+#confirmModal .modal-body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+#confirmModal .modal-footer {
+  padding: 15px 20px;
+  gap: 10px;
+}
+
+#confirmModalConfirm {
+  background: #dc3545;
+  color: white;
+  border: none;
+  font-weight: 500;
+}
+
+#confirmModalConfirm:hover {
+  background: #c82333;
+}
+
+#confirmModalCancel {
+  background: #6c757d;
+  color: white;
+}
+
+#confirmModalCancel:hover {
+  background: #5a6268;
 } 

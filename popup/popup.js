@@ -8,18 +8,67 @@ class BookmarkManager {
     this.contextMenuTarget = null;
     this.nextId = 1; // 用于生成唯一ID
     this.currentMode = 'plugin'; // 'plugin' 或 'chrome'
+    this.debugLogs = []; // 调试日志存储
+    this.maxDebugLogs = 100; // 最大日志条数
     
     this.init();
   }
 
   // 初始化
   async init() {
-    console.log('BookmarkManager初始化开始');
+    this.addDebugLog('📚 BookmarkManager初始化开始', 'info');
+    
+    // 浏览器兼容性检查
+    this.checkBrowserCompatibility();
+    
     this.bindEvents();
     await this.loadExpandedState();
     await this.loadBookmarksFromStorage(); // 恢复为本地存储
     this.hideLoading();
-    console.log('BookmarkManager初始化完成');
+    this.addDebugLog('✅ BookmarkManager初始化完成', 'success');
+  }
+
+  // 浏览器兼容性检查
+  checkBrowserCompatibility() {
+    this.addDebugLog('🔍 检查浏览器兼容性', 'info');
+    
+    // 检查浏览器信息
+    const userAgent = navigator.userAgent;
+    this.addDebugLog(`📋 用户代理: ${userAgent}`, 'info');
+    
+    // 检测浏览器类型
+    let browserType = 'Unknown';
+    if (userAgent.includes('Chrome') && !userAgent.includes('Edg') && !userAgent.includes('OPR')) {
+      browserType = 'Chrome';
+    } else if (userAgent.includes('Edg')) {
+      browserType = 'Edge';
+    } else if (userAgent.includes('OPR')) {
+      browserType = 'Opera';
+    } else if (userAgent.includes('Chrome')) {
+      browserType = 'Chromium-based';
+    }
+    
+    this.addDebugLog(`🌐 检测到浏览器类型: ${browserType}`, 'info');
+    
+    // 检查Chrome API可用性
+    this.addDebugLog('🔧 检查Chrome API可用性:', 'info');
+    this.addDebugLog(`  - chrome.bookmarks: ${!!chrome?.bookmarks}`, 'info');
+    this.addDebugLog(`  - chrome.bookmarks.getTree: ${!!chrome?.bookmarks?.getTree}`, 'info');
+    this.addDebugLog(`  - chrome.bookmarks.remove: ${!!chrome?.bookmarks?.remove}`, 'info');
+    this.addDebugLog(`  - chrome.bookmarks.removeTree: ${!!chrome?.bookmarks?.removeTree}`, 'info');
+    this.addDebugLog(`  - chrome.storage: ${!!chrome?.storage}`, 'info');
+    this.addDebugLog(`  - chrome.tabs: ${!!chrome?.tabs}`, 'info');
+    
+    // 存储浏览器信息供后续使用
+    this.browserInfo = {
+      type: browserType,
+      userAgent: userAgent,
+      hasBookmarkAPI: !!chrome?.bookmarks,
+      hasStorageAPI: !!chrome?.storage,
+      hasTabAPI: !!chrome?.tabs
+    };
+    
+    this.addDebugLog(`💾 浏览器信息已保存: ${JSON.stringify(this.browserInfo)}`, 'info');
   }
 
   // 绑定事件监听器
@@ -57,13 +106,13 @@ class BookmarkManager {
     // 切换显示模式
     const toggleModeBtn = document.getElementById('toggleModeBtn');
     if (toggleModeBtn) {
-      console.log('找到切换模式按钮，绑定事件');
+      this.addDebugLog('🔗 找到切换模式按钮，绑定事件', 'info');
       toggleModeBtn.addEventListener('click', () => {
-        console.log('切换按钮被点击');
+        this.addDebugLog('🖱️ 切换按钮被点击', 'info');
         this.toggleDisplayMode();
       });
     } else {
-      console.error('未找到toggleModeBtn元素');
+      this.addDebugLog('❌ 未找到toggleModeBtn元素', 'error');
     }
 
     // 右键菜单
@@ -82,11 +131,55 @@ class BookmarkManager {
 
     // 右键菜单操作
     document.getElementById('contextMenu').addEventListener('click', (e) => {
-      const action = e.target.closest('.menu-item')?.dataset.action;
-      if (action) {
-        this.handleContextMenuAction(action);
+      this.addDebugLog('🖱️ contextMenu 点击事件被触发', 'info');
+      this.addDebugLog(`🎯 点击目标: ${e.target.tagName}, className: ${e.target.className}`, 'info');
+      
+      // 尝试多种方式找到菜单项
+      let menuItem = e.target.closest('.menu-item');
+      if (!menuItem) {
+        // 如果closest失败，尝试向上查找
+        let currentElement = e.target;
+        while (currentElement && currentElement !== document.getElementById('contextMenu')) {
+          if (currentElement.classList && currentElement.classList.contains('menu-item')) {
+            menuItem = currentElement;
+            break;
+          }
+          currentElement = currentElement.parentElement;
+        }
+      }
+      
+      this.addDebugLog(`📋 找到的菜单项: ${!!menuItem}`, 'info');
+      
+      if (menuItem) {
+        const action = menuItem.dataset.action;
+        this.addDebugLog(`🎬 获取到的action: ${action}`, 'info');
+        
+        if (action) {
+          this.addDebugLog(`✅ 准备执行操作: ${action}`, 'info');
+          this.handleContextMenuAction(action);
+        } else {
+          this.addDebugLog('❌ 菜单项没有action属性', 'error');
+          this.addDebugLog(`📊 菜单项详情: ${JSON.stringify({
+            tagName: menuItem.tagName,
+            className: menuItem.className,
+            dataset: Object.keys(menuItem.dataset),
+            innerHTML: menuItem.innerHTML.substring(0, 100)
+          })}`, 'info');
+        }
+      } else {
+        this.addDebugLog('❌ 未找到菜单项元素', 'error');
+        this.addDebugLog(`🔍 点击位置详情: ${JSON.stringify({
+          targetTag: e.target.tagName,
+          targetClass: e.target.className,
+          targetId: e.target.id,
+          parentTag: e.target.parentElement?.tagName,
+          parentClass: e.target.parentElement?.className
+        })}`, 'info');
       }
     });
+
+    // DIA浏览器兼容性：额外绑定各个菜单项的直接点击事件
+    this.bindDirectMenuEvents();
 
     // 编辑模态框
     this.bindModalEvents();
@@ -95,6 +188,81 @@ class BookmarkManager {
     document.addEventListener('keydown', (e) => {
       this.handleKeydown(e);
     });
+
+    // 调试日志控制（新增）
+    const debugToggle = document.getElementById('debugToggle');
+    const debugLog = document.getElementById('debugLog');
+    const clearDebugLog = document.getElementById('clearDebugLog');
+    
+    if (debugToggle && debugLog) {
+      debugToggle.addEventListener('click', () => {
+        const isVisible = debugLog.style.display !== 'none';
+        debugLog.style.display = isVisible ? 'none' : 'block';
+        debugToggle.textContent = isVisible ? '🔍 显示调试日志' : '🔍 隐藏调试日志';
+        
+        if (!isVisible) {
+          this.addDebugLog('🔧 调试日志面板已打开', 'info');
+        }
+      });
+    }
+    
+    if (clearDebugLog) {
+      clearDebugLog.addEventListener('click', () => {
+        this.clearDebugLog();
+      });
+    }
+
+    // 测试事件按钮（新增）
+    const testEventBtn = document.getElementById('testEventBtn');
+    if (testEventBtn) {
+      testEventBtn.addEventListener('click', () => {
+        this.addDebugLog('🧪 测试事件按钮被点击', 'info');
+        this.testEventSystem();
+      });
+    }
+  }
+
+  // 测试事件系统
+  async testEventSystem() {
+    this.addDebugLog('🔬 开始测试事件系统', 'info');
+    
+    // 测试confirm对话框
+    try {
+      this.addDebugLog('📋 测试confirm对话框', 'info');
+      const testConfirm = await this.compatibleConfirm('这是一个测试确认对话框，点击确定或取消', '测试确认对话框');
+      this.addDebugLog(`✅ confirm测试结果: ${testConfirm}`, 'success');
+    } catch (error) {
+      this.addDebugLog(`❌ confirm测试失败: ${error.message}`, 'error');
+    }
+    
+    // 测试右键菜单元素
+    const contextMenu = document.getElementById('contextMenu');
+    if (contextMenu) {
+      this.addDebugLog('🎯 contextMenu元素存在', 'info');
+      
+      // 查找删除菜单项
+      const deleteItem = contextMenu.querySelector('[data-action="delete"]');
+      if (deleteItem) {
+        this.addDebugLog('🗑️ 删除菜单项存在', 'info');
+        this.addDebugLog(`📊 删除菜单项详情: ${JSON.stringify({
+          tagName: deleteItem.tagName,
+          className: deleteItem.className,
+          dataset: Object.keys(deleteItem.dataset),
+          textContent: deleteItem.textContent.trim()
+        })}`, 'info');
+      } else {
+        this.addDebugLog('❌ 删除菜单项不存在', 'error');
+      }
+    } else {
+      this.addDebugLog('❌ contextMenu元素不存在', 'error');
+    }
+    
+    // 测试浏览器API
+    this.addDebugLog('🌐 测试浏览器API可用性', 'info');
+    this.addDebugLog(`📋 chrome.bookmarks: ${!!chrome?.bookmarks}`, 'info');
+    this.addDebugLog(`📋 chrome.bookmarks.remove: ${!!chrome?.bookmarks?.remove}`, 'info');
+    
+    this.addDebugLog('✅ 事件系统测试完成', 'success');
   }
 
   // 绑定模态框事件
@@ -128,6 +296,125 @@ class BookmarkManager {
     document.getElementById('editUrl').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.saveBookmarkEdit();
     });
+
+    // 自定义确认对话框事件绑定（DIA浏览器兼容性）
+    this.bindConfirmModalEvents();
+  }
+
+  // 绑定自定义确认对话框事件
+  bindConfirmModalEvents() {
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmCancel = document.getElementById('confirmModalCancel');
+    const confirmConfirm = document.getElementById('confirmModalConfirm');
+
+    if (confirmCancel) {
+      confirmCancel.addEventListener('click', () => {
+        this.hideCustomConfirm(false);
+      });
+    }
+
+    if (confirmConfirm) {
+      confirmConfirm.addEventListener('click', () => {
+        this.hideCustomConfirm(true);
+      });
+    }
+
+    // 点击背景关闭（相当于取消）
+    if (confirmModal) {
+      confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) {
+          this.hideCustomConfirm(false);
+        }
+      });
+    }
+  }
+
+  // 显示自定义确认对话框
+  showCustomConfirm(message, title = '确认操作') {
+    this.addDebugLog(`🔔 显示自定义确认对话框: ${message}`, 'info');
+    
+    return new Promise((resolve) => {
+      this.confirmCallback = resolve;
+      
+      const modal = document.getElementById('confirmModal');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const messageEl = document.getElementById('confirmModalMessage');
+      
+      if (titleEl) titleEl.textContent = title;
+      if (messageEl) messageEl.textContent = message;
+      
+      if (modal) {
+        modal.style.display = 'flex';
+        this.addDebugLog('✅ 自定义确认对话框已显示', 'info');
+      } else {
+        this.addDebugLog('❌ 确认对话框元素不存在', 'error');
+        resolve(false);
+      }
+    });
+  }
+
+  // 隐藏自定义确认对话框
+  hideCustomConfirm(result) {
+    this.addDebugLog(`🔔 隐藏自定义确认对话框，结果: ${result}`, 'info');
+    
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    
+    if (this.confirmCallback) {
+      this.confirmCallback(result);
+      this.confirmCallback = null;
+    }
+  }
+
+  // 兼容性确认对话框（优先使用自定义对话框）
+  async compatibleConfirm(message, title = '确认操作') {
+    this.addDebugLog(`🤔 compatibleConfirm调用: ${message}`, 'info');
+    
+    // 首先测试原生confirm是否正常工作
+    if (this.isNativeConfirmWorking === undefined) {
+      this.addDebugLog('🧪 测试原生confirm可用性', 'info');
+      try {
+        // 创建一个短时间的测试
+        const testStart = Date.now();
+        const testResult = confirm('测试确认对话框（请点击取消）');
+        const testDuration = Date.now() - testStart;
+        
+        // 如果confirm立即返回（小于100ms），可能是不正常的
+        if (testDuration < 100) {
+          this.addDebugLog(`⚠️ confirm立即返回（${testDuration}ms），可能不正常`, 'warn');
+          this.isNativeConfirmWorking = false;
+        } else {
+          this.addDebugLog(`✅ confirm正常工作（${testDuration}ms）`, 'success');
+          this.isNativeConfirmWorking = true;
+        }
+        
+        this.addDebugLog(`📋 confirm测试结果: ${testResult}，耗时: ${testDuration}ms`, 'info');
+      } catch (error) {
+        this.addDebugLog(`❌ confirm测试失败: ${error.message}`, 'error');
+        this.isNativeConfirmWorking = false;
+      }
+    }
+    
+    // 根据测试结果选择对话框
+    if (this.isNativeConfirmWorking) {
+      this.addDebugLog('✅ 使用原生confirm对话框', 'info');
+      try {
+        const result = confirm(message);
+        this.addDebugLog(`🎭 原生confirm结果: ${result}`, 'info');
+        return result;
+      } catch (error) {
+        this.addDebugLog(`❌ 原生confirm出错: ${error.message}`, 'error');
+        this.isNativeConfirmWorking = false;
+        // 降级到自定义对话框
+      }
+    }
+    
+    this.addDebugLog('🔄 使用自定义确认对话框', 'info');
+    const result = await this.showCustomConfirm(message, title);
+    this.addDebugLog(`🎭 自定义confirm结果: ${result}`, 'info');
+    return result;
   }
 
   // 从本地存储加载书签 - 现在不再使用
@@ -146,12 +433,52 @@ class BookmarkManager {
 
   // 获取Chrome浏览器书签
   async getChromeBookmarks() {
+    console.log('📚 getChromeBookmarks 开始');
+    console.log('🌐 当前浏览器信息:', this.browserInfo);
+    
+    // 检查API可用性
+    if (!chrome?.bookmarks?.getTree) {
+      console.error('❌ chrome.bookmarks.getTree API不可用');
+      this.showStatus('❌ 当前浏览器不支持书签读取功能', 'error');
+      return [];
+    }
+    
     try {
-      const bookmarkTree = await chrome.bookmarks.getTree();
-      return this.processChromeBookmarkTree(bookmarkTree);
+      console.log('📞 调用chrome.bookmarks.getTree API');
+      
+      // 添加超时处理
+      const getTreePromise = chrome.bookmarks.getTree();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('获取书签树超时')), 10000);
+      });
+      
+      const bookmarkTree = await Promise.race([getTreePromise, timeoutPromise]);
+      console.log('✅ Chrome书签树获取成功，根节点数量:', bookmarkTree.length);
+      
+      const processedBookmarks = this.processChromeBookmarkTree(bookmarkTree);
+      console.log('📊 处理后的书签数量:', processedBookmarks.length);
+      
+      return processedBookmarks;
     } catch (error) {
-      console.error('获取Chrome书签失败:', error);
-      this.showStatus('获取Chrome书签失败', 'error');
+      console.error('❌ 获取Chrome书签失败:', error);
+      console.error('❌ 错误详情:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        browserType: this.browserInfo?.type
+      });
+      
+      // 针对不同错误类型的处理
+      if (error.message.includes('timeout') || error.message.includes('超时')) {
+        this.showStatus('❌ 获取书签超时，请重试', 'error');
+      } else if (error.message.includes('Extension context invalidated')) {
+        this.showStatus('❌ 扩展上下文失效，请重新加载扩展', 'error');
+      } else if (error.message.includes('Permission')) {
+        this.showStatus('❌ 权限不足，无法访问浏览器书签', 'error');
+      } else {
+        this.showStatus(`❌ 获取书签失败: ${error.message}`, 'error');
+      }
+      
       return [];
     }
   }
@@ -188,18 +515,51 @@ class BookmarkManager {
 
   // 删除Chrome浏览器书签
   async deleteChromeBookmark(bookmarkId) {
+    this.addDebugLog(`🗑️ deleteChromeBookmark 开始，bookmarkId: ${bookmarkId}`, 'info');
+    this.addDebugLog(`🌐 当前浏览器信息: ${JSON.stringify(this.browserInfo)}`, 'info');
+    
+    // 检查API可用性
+    if (!chrome?.bookmarks?.remove) {
+      this.addDebugLog('❌ chrome.bookmarks.remove API不可用', 'error');
+      this.showStatus('❌ 当前浏览器不支持书签删除功能', 'error');
+      return false;
+    }
+    
     try {
-      await chrome.bookmarks.remove(bookmarkId);
+      this.addDebugLog('📞 调用chrome.bookmarks.remove API', 'info');
+      
+      // 添加超时处理，防止API无响应
+      const deletePromise = chrome.bookmarks.remove(bookmarkId);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API调用超时')), 10000); // 10秒超时
+      });
+      
+      await Promise.race([deletePromise, timeoutPromise]);
+      
+      this.addDebugLog('✅ Chrome书签删除API调用成功', 'success');
       this.showStatus('✅ Chrome书签删除成功', 'success');
       return true;
     } catch (error) {
-      console.error('删除Chrome书签失败:', error);
-      if (error.message.includes('not found')) {
+      this.addDebugLog(`❌ 删除Chrome书签失败: ${error.message}`, 'error');
+      this.addDebugLog(`❌ 错误详情: ${JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        bookmarkId: bookmarkId,
+        browserType: this.browserInfo?.type
+      })}`, 'error');
+      
+      // 更详细的错误处理
+      if (error.message.includes('timeout') || error.message.includes('超时')) {
+        this.showStatus('❌ 删除操作超时，请重试', 'error');
+      } else if (error.message.includes('not found')) {
         this.showStatus('❌ 书签不存在，可能已被删除', 'error');
-      } else if (error.message.includes('Cannot remove')) {
-        this.showStatus('❌ 无法删除系统文件夹', 'error');
+      } else if (error.message.includes('Cannot remove') || error.message.includes('Permission')) {
+        this.showStatus('❌ 无法删除此书签（权限不足）', 'error');
+      } else if (error.message.includes('Extension context invalidated')) {
+        this.showStatus('❌ 扩展上下文失效，请重新加载扩展', 'error');
       } else {
-        this.showStatus('❌ 删除Chrome书签失败', 'error');
+        this.showStatus(`❌ 删除失败: ${error.message}`, 'error');
       }
       return false;
     }
@@ -207,18 +567,51 @@ class BookmarkManager {
 
   // 删除Chrome文件夹（包含子项）
   async deleteChromeFolderRecursively(folderId) {
+    console.log('🗑️📁 deleteChromeFolderRecursively 开始，folderId:', folderId);
+    console.log('🌐 当前浏览器信息:', this.browserInfo);
+    
+    // 检查API可用性
+    if (!chrome?.bookmarks?.removeTree) {
+      console.error('❌ chrome.bookmarks.removeTree API不可用');
+      this.showStatus('❌ 当前浏览器不支持文件夹删除功能', 'error');
+      return false;
+    }
+    
     try {
-      await chrome.bookmarks.removeTree(folderId);
+      console.log('📞 调用chrome.bookmarks.removeTree API');
+      
+      // 添加超时处理
+      const deletePromise = chrome.bookmarks.removeTree(folderId);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API调用超时')), 15000); // 文件夹删除给更长超时时间
+      });
+      
+      await Promise.race([deletePromise, timeoutPromise]);
+      
+      console.log('✅ Chrome文件夹删除API调用成功');
       this.showStatus('✅ Chrome文件夹删除成功', 'success');
       return true;
     } catch (error) {
-      console.error('删除Chrome文件夹失败:', error);
-      if (error.message.includes('not found')) {
+      console.error('❌ 删除Chrome文件夹失败:', error);
+      console.error('❌ 错误详情:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        folderId: folderId,
+        browserType: this.browserInfo?.type
+      });
+      
+      // 更详细的错误处理
+      if (error.message.includes('timeout') || error.message.includes('超时')) {
+        this.showStatus('❌ 删除操作超时，请重试', 'error');
+      } else if (error.message.includes('not found')) {
         this.showStatus('❌ 文件夹不存在，可能已被删除', 'error');
-      } else if (error.message.includes('Cannot remove')) {
-        this.showStatus('❌ 无法删除系统文件夹（如书签栏）', 'error');
+      } else if (error.message.includes('Cannot remove') || error.message.includes('Permission')) {
+        this.showStatus('❌ 无法删除此文件夹（权限不足或系统文件夹）', 'error');
+      } else if (error.message.includes('Extension context invalidated')) {
+        this.showStatus('❌ 扩展上下文失效，请重新加载扩展', 'error');
       } else {
-        this.showStatus('❌ 删除Chrome文件夹失败', 'error');
+        this.showStatus(`❌ 删除失败: ${error.message}`, 'error');
       }
       return false;
     }
@@ -262,22 +655,28 @@ class BookmarkManager {
 
   // 渲染书签列表
   renderBookmarks(searchResults = null) {
+    console.log('🎨 renderBookmarks 开始，搜索结果:', searchResults ? '有' : '无');
     const container = document.getElementById('bookmarkTree');
     const emptyState = document.getElementById('emptyState');
     
     const bookmarksToRender = searchResults || this.bookmarks;
+    console.log('📊 准备渲染书签数量:', bookmarksToRender.length);
     
     if (bookmarksToRender.length === 0) {
+      console.log('📭 书签列表为空，显示空状态');
       container.innerHTML = '';
       emptyState.style.display = 'flex';
       return;
     }
     
+    console.log('📝 开始生成书签HTML');
     emptyState.style.display = 'none';
     container.innerHTML = this.renderBookmarkNodes(bookmarksToRender);
     
+    console.log('🔗 重新绑定书签事件');
     // 绑定点击事件
     this.bindBookmarkEvents();
+    console.log('✅ renderBookmarks 完成');
   }
 
   // 渲染书签节点
@@ -406,6 +805,15 @@ class BookmarkManager {
 
   // 显示右键菜单
   showContextMenu(event, target) {
+    this.addDebugLog('🖱️ showContextMenu 被调用', 'info');
+    this.addDebugLog(`🎯 右键目标: ${JSON.stringify({
+      id: target.dataset.id,
+      title: target.dataset.title,
+      isFolder: target.dataset.isFolder,
+      isChromeBookmark: target.dataset.isChromeBookmark,
+      url: target.dataset.url
+    })}`, 'info');
+    
     const menu = document.getElementById('contextMenu');
     const isFolder = target.dataset.isFolder === 'true';
     const hasUrl = target.dataset.url;
@@ -419,13 +827,24 @@ class BookmarkManager {
     const chromeDeleteItem = menu.querySelector('[data-action="delete-chrome"]');
     const deleteText = deleteItem.querySelector('.delete-text');
     
+    this.addDebugLog(`📋 菜单项元素检查: ${JSON.stringify({
+      openItem: !!openItem,
+      openNewTabItem: !!openNewTabItem,
+      editItem: !!editItem,
+      deleteItem: !!deleteItem,
+      chromeDeleteItem: !!chromeDeleteItem,
+      deleteText: !!deleteText
+    })}`, 'info');
+    
     // 显示/隐藏打开相关菜单
     if (isFolder || !hasUrl) {
       openItem.style.display = 'none';
       openNewTabItem.style.display = 'none';
+      this.addDebugLog('📁 隐藏打开菜单项（文件夹或无URL）', 'info');
     } else {
       openItem.style.display = 'flex';
       openNewTabItem.style.display = 'flex';
+      this.addDebugLog('🔗 显示打开菜单项', 'info');
     }
     
     // 根据书签类型调整菜单项
@@ -435,12 +854,14 @@ class BookmarkManager {
       deleteText.textContent = '删除（危险）';
       deleteText.style.color = '#dc3545';
       chromeDeleteItem.style.display = 'flex';
+      this.addDebugLog('🌐 配置Chrome书签菜单', 'info');
     } else {
       // 插件书签：正常显示
       editItem.style.display = 'flex';
       deleteText.textContent = '删除';
       deleteText.style.color = '';
       chromeDeleteItem.style.display = 'none';
+      this.addDebugLog('⭐ 配置插件书签菜单', 'info');
     }
     
     this.contextMenuTarget = target;
@@ -450,6 +871,8 @@ class BookmarkManager {
     menu.style.left = event.pageX + 'px';
     menu.style.top = event.pageY + 'px';
     
+    this.addDebugLog(`📍 菜单定位: {x: ${event.pageX}, y: ${event.pageY}}`, 'info');
+    
     // 确保菜单不超出视窗
     const rect = menu.getBoundingClientRect();
     if (rect.right > window.innerWidth) {
@@ -458,6 +881,11 @@ class BookmarkManager {
     if (rect.bottom > window.innerHeight) {
       menu.style.top = (event.pageY - rect.height) + 'px';
     }
+    
+    this.addDebugLog('✅ 右键菜单显示完成', 'success');
+    
+    // DIA浏览器兼容性：每次显示菜单时重新绑定直接事件
+    this.bindDirectMenuEvents();
   }
 
   // 隐藏右键菜单
@@ -468,7 +896,12 @@ class BookmarkManager {
 
   // 处理右键菜单操作
   async handleContextMenuAction(action) {
-    if (!this.contextMenuTarget) return;
+    this.addDebugLog(`🎯 handleContextMenuAction 被调用, action: ${action}`, 'info');
+    
+    if (!this.contextMenuTarget) {
+      this.addDebugLog('❌ 没有contextMenuTarget，退出', 'warn');
+      return;
+    }
     
     const id = this.contextMenuTarget.dataset.id;
     const url = this.contextMenuTarget.dataset.url;
@@ -476,77 +909,150 @@ class BookmarkManager {
     const isFolder = this.contextMenuTarget.dataset.isFolder === 'true';
     const isChromeBookmark = this.contextMenuTarget.dataset.isChromeBookmark === 'true';
     
+    this.addDebugLog(`📊 右键菜单目标数据: ${JSON.stringify({
+      id, url, title, isFolder, isChromeBookmark, currentMode: this.currentMode
+    })}`, 'info');
+    
     this.hideContextMenu();
     
     try {
       switch (action) {
         case 'open':
+          this.addDebugLog('🔗 执行打开操作', 'info');
           if (url) chrome.tabs.update({ url });
           break;
           
         case 'open-new-tab':
+          this.addDebugLog('📑 执行新标签页打开操作', 'info');
           if (url) chrome.tabs.create({ url });
           break;
           
         case 'edit':
+          this.addDebugLog('✏️ 执行编辑操作', 'info');
           this.showEditModal(id, title, url, isFolder);
           break;
           
         case 'delete':
+          this.addDebugLog(`🗑️ 执行删除操作，isChromeBookmark: ${isChromeBookmark}`, 'info');
+          
           if (isChromeBookmark) {
             // 删除Chrome书签
             const confirmMessage = isFolder 
               ? `确定要删除Chrome文件夹 "${title}" 及其所有子项吗？` 
               : `确定要删除Chrome书签 "${title}" 吗？`;
             
-            if (confirm(confirmMessage)) {
+            this.addDebugLog('💬 显示Chrome书签删除确认对话框', 'info');
+            
+            // 使用兼容性确认对话框
+            let userConfirmed = false;
+            try {
+              userConfirmed = await this.compatibleConfirm(confirmMessage, '删除Chrome书签');
+              this.addDebugLog(`🎭 用户确认结果: ${userConfirmed}`, 'info');
+            } catch (error) {
+              this.addDebugLog(`❌ 确认对话框出错: ${error.message}`, 'error');
+              return;
+            }
+            
+            if (userConfirmed) {
+              this.addDebugLog('✅ 用户确认删除Chrome书签，开始执行删除', 'info');
               const success = isFolder 
                 ? await this.deleteChromeFolderRecursively(id)
                 : await this.deleteChromeBookmark(id);
               
+              this.addDebugLog(`🔄 删除结果: ${success}，当前模式: ${this.currentMode}`, 'info');
               if (success) {
                 // 重新加载当前显示模式
                 if (this.currentMode === 'chrome') {
+                  this.addDebugLog('🔄 重新加载Chrome书签', 'info');
                   await this.loadChromeBookmarks();
+                } else {
+                  this.addDebugLog('⚠️ 当前不是Chrome模式，但删除了Chrome书签', 'warn');
                 }
+                // 确保界面立即更新
+                this.addDebugLog('🎨 强制重新渲染界面', 'info');
+                this.renderBookmarks();
               }
+            } else {
+              this.addDebugLog('❌ 用户取消删除Chrome书签', 'info');
             }
           } else {
             // 删除插件书签
-            if (confirm(`确定要删除 "${title}" 吗？`)) {
+            this.addDebugLog('💬 显示插件书签删除确认对话框', 'info');
+            
+            let userConfirmed = false;
+            try {
+              userConfirmed = await this.compatibleConfirm(`确定要删除 "${title}" 吗？`, '删除插件书签');
+              this.addDebugLog(`🎭 用户确认结果: ${userConfirmed}`, 'info');
+            } catch (error) {
+              this.addDebugLog(`❌ 确认对话框出错: ${error.message}`, 'error');
+              return;
+            }
+            
+            if (userConfirmed) {
+              this.addDebugLog('✅ 用户确认删除插件书签，开始执行删除', 'info');
               await this.deleteBookmark(id);
+              this.addDebugLog('🔄 重新加载插件书签', 'info');
               await this.loadBookmarks();
+              // 确保界面立即更新
+              this.addDebugLog('🎨 强制重新渲染界面', 'info');
+              this.renderBookmarks();
               this.showStatus('删除成功');
+            } else {
+              this.addDebugLog('❌ 用户取消删除插件书签', 'info');
             }
           }
           break;
           
         case 'delete-chrome':
+          this.addDebugLog('🗑️💀 执行专门的Chrome书签删除操作', 'info');
           // 专门的删除Chrome书签菜单项
           const confirmMessage = isFolder 
             ? `确定要从Chrome中删除文件夹 "${title}" 及其所有子项吗？此操作不可撤销！` 
             : `确定要从Chrome中删除书签 "${title}" 吗？此操作不可撤销！`;
           
-          if (confirm(confirmMessage)) {
+          this.addDebugLog('💬 显示Chrome书签危险删除确认对话框', 'info');
+          
+          let userConfirmed = false;
+          try {
+            userConfirmed = await this.compatibleConfirm(confirmMessage, '危险操作：删除Chrome书签');
+            this.addDebugLog(`🎭 用户确认结果: ${userConfirmed}`, 'info');
+          } catch (error) {
+            this.addDebugLog(`❌ 确认对话框出错: ${error.message}`, 'error');
+            return;
+          }
+          
+          if (userConfirmed) {
+            this.addDebugLog('✅ 用户确认危险删除Chrome书签，开始执行删除', 'info');
             const success = isFolder 
               ? await this.deleteChromeFolderRecursively(id)
               : await this.deleteChromeBookmark(id);
             
+            this.addDebugLog(`🔄 删除结果: ${success}，当前模式: ${this.currentMode}`, 'info');
             if (success) {
               // 重新加载Chrome书签显示
               if (this.currentMode === 'chrome') {
+                this.addDebugLog('🔄 重新加载Chrome书签显示', 'info');
                 await this.loadChromeBookmarks();
               }
+              // 确保界面立即更新
+              this.addDebugLog('🎨 强制重新渲染界面', 'info');
+              this.renderBookmarks();
             }
+          } else {
+            this.addDebugLog('❌ 用户取消危险删除Chrome书签', 'info');
           }
           break;
           
         case 'create-folder':
+          this.addDebugLog('📁 执行创建文件夹操作', 'info');
           this.showEditModal(null, '', '', true, id);
           break;
+          
+        default:
+          this.addDebugLog(`❓ 未知的操作: ${action}`, 'warn');
       }
     } catch (error) {
-      console.error('操作失败:', error);
+      this.addDebugLog(`💥 操作失败: ${error.message}`, 'error');
       this.showStatus('操作失败', 'error');
     }
   }
@@ -866,6 +1372,7 @@ class BookmarkManager {
     // Escape 关闭模态框和菜单
     if (event.key === 'Escape') {
       document.getElementById('editModal').style.display = 'none';
+      document.getElementById('confirmModal').style.display = 'none';
       this.hideContextMenu();
     }
   }
@@ -1026,17 +1533,21 @@ class BookmarkManager {
 
   // 加载Chrome书签
   async loadChromeBookmarks() {
+    console.log('📚 loadChromeBookmarks 开始');
     try {
       this.showLoading();
       this.showStatus('正在加载Chrome书签...', 'info');
       
       const chromeBookmarks = await this.getChromeBookmarks();
+      console.log('📊 获取到Chrome书签数量:', chromeBookmarks.length);
       this.bookmarks = chromeBookmarks;
       
       this.showStatus('Chrome书签加载成功', 'success');
+      console.log('🎨 开始渲染Chrome书签');
       this.renderBookmarks();
+      console.log('✅ Chrome书签加载和渲染完成');
     } catch (error) {
-      console.error('加载Chrome书签失败:', error);
+      console.error('❌ 加载Chrome书签失败:', error);
       this.showStatus('加载Chrome书签失败', 'error');
     } finally {
       this.hideLoading();
@@ -1045,7 +1556,7 @@ class BookmarkManager {
 
   // 切换显示模式
   async toggleDisplayMode() {
-    console.log('toggleDisplayMode被调用，当前模式:', this.currentMode);
+    this.addDebugLog(`🔄 toggleDisplayMode被调用，当前模式: ${this.currentMode}`, 'info');
     const toggleBtn = document.getElementById('toggleModeBtn');
     
     if (this.currentMode === 'plugin') {
@@ -1066,9 +1577,103 @@ class BookmarkManager {
     
     this.renderBookmarks();
   }
+
+  // 可视化日志系统
+  addDebugLog(message, level = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = {
+      timestamp,
+      message,
+      level
+    };
+    
+    this.debugLogs.push(logEntry);
+    
+    // 限制日志数量
+    if (this.debugLogs.length > this.maxDebugLogs) {
+      this.debugLogs = this.debugLogs.slice(-this.maxDebugLogs);
+    }
+    
+    // 更新可视化日志显示
+    this.updateDebugDisplay();
+    
+    // 同时保留控制台输出（如果可用）
+    const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
+    if (console && console[consoleMethod]) {
+      console[consoleMethod](`[${timestamp}] ${message}`);
+    }
+  }
+
+  // 更新调试日志显示
+  updateDebugDisplay() {
+    const debugContent = document.getElementById('debugContent');
+    if (!debugContent) return;
+    
+    const logsHtml = this.debugLogs.map(log => `
+      <div class="debug-entry debug-level-${log.level}">
+        <span class="debug-timestamp">${log.timestamp}</span> ${log.message}
+      </div>
+    `).join('');
+    
+    debugContent.innerHTML = logsHtml;
+    // 滚动到底部显示最新日志
+    debugContent.scrollTop = debugContent.scrollHeight;
+  }
+
+  // 清空调试日志
+  clearDebugLog() {
+    this.debugLogs = [];
+    this.updateDebugDisplay();
+    this.addDebugLog('📝 调试日志已清空', 'info');
+  }
+
+  // 直接绑定菜单项事件（DIA浏览器兼容性）
+  bindDirectMenuEvents() {
+    this.addDebugLog('🔧 绑定直接菜单事件（DIA浏览器兼容性）', 'info');
+    
+    // 获取所有菜单项
+    const menuItems = document.querySelectorAll('#contextMenu .menu-item');
+    this.addDebugLog(`📋 找到 ${menuItems.length} 个菜单项`, 'info');
+    
+    menuItems.forEach((item, index) => {
+      const action = item.dataset.action;
+      this.addDebugLog(`📌 绑定菜单项 ${index}: action="${action}"`, 'info');
+      
+      // 移除之前的监听器（如果有）
+      item.removeEventListener('click', this.handleDirectMenuClick.bind(this));
+      
+      // 添加新的监听器
+      item.addEventListener('click', (e) => {
+        this.addDebugLog(`🎯 直接菜单点击: action="${action}"`, 'info');
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (action) {
+          this.handleContextMenuAction(action);
+        } else {
+          this.addDebugLog('❌ 直接菜单点击但没有action', 'error');
+        }
+      });
+    });
+    
+    this.addDebugLog('✅ 直接菜单事件绑定完成', 'success');
+  }
+
+  // 处理直接菜单点击（DIA浏览器兼容性回调）
+  handleDirectMenuClick(e) {
+    const action = e.currentTarget.dataset.action;
+    this.addDebugLog(`🎯 handleDirectMenuClick: action="${action}"`, 'info');
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (action) {
+      this.handleContextMenuAction(action);
+    }
+  }
 }
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
   new BookmarkManager();
-}); 
+});
