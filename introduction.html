@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简书签管理器 - 专为Dia浏览器优化的书签管理解决方案</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #64748b;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav a:hover {
+            color: #4f46e5;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 5rem 0;
+            text-align: center;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff, #e2e8f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            color: #1e293b;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            line-height: 1.7;
+        }
+
+        /* Installation Section */
+        .installation {
+            padding: 5rem 0;
+            background: #f8fafc;
+        }
+
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin: 0 auto 1.5rem;
+        }
+
+        .step h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+
+        .step p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Export Guide Section */
+        .export-guide {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .guide-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-top: 3rem;
+        }
+
+        .guide-steps {
+            space-y: 1.5rem;
+        }
+
+        .guide-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .guide-step-number {
+            width: 30px;
+            height: 30px;
+            background: #4f46e5;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .guide-step-content h4 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1e293b;
+        }
+
+        .guide-step-content p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .guide-image {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .guide-image-placeholder {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* Screenshots Section */
+        .screenshots {
+            padding: 5rem 0;
+            background: #f8fafc;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .screenshot {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .screenshot:hover {
+            transform: translateY(-5px);
+        }
+
+        .screenshot-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .screenshot-content {
+            padding: 1.5rem;
+        }
+
+        .screenshot h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1e293b;
+        }
+
+        .screenshot p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1e293b;
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #f1f5f9;
+        }
+
+        .footer-section p,
+        .footer-section a {
+            color: #94a3b8;
+            text-decoration: none;
+            line-height: 1.7;
+        }
+
+        .footer-section a:hover {
+            color: #e2e8f0;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #334155;
+            padding-top: 2rem;
+            color: #94a3b8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .download-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .download-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .download-card {
+                padding: 1.5rem;
+            }
+
+            .guide-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .nav {
+                display: none;
+            }
+        }
+
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-card,
+        .step,
+        .screenshot {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        /* Download Section */
+        .download {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        .download-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 3rem;
+            align-items: start;
+            margin-top: 3rem;
+        }
+
+        .download-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .download-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .download-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .download-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .download-info p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .download-features {
+            margin-bottom: 2rem;
+        }
+
+        .download-feature {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+        }
+
+        .feature-check {
+            color: #10b981;
+            font-size: 1.1rem;
+        }
+
+        .download-feature span:last-child {
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .download-btn {
+            width: 100%;
+            font-size: 1.1rem;
+            padding: 1.2rem 2rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .download-btn:hover {
+            background: linear-gradient(135deg, #4338ca, #6d28d9);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4);
+        }
+
+        .download-info-text {
+            text-align: center;
+        }
+
+        .download-info-text p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .download-tips {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .download-tips h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        .download-tips ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .download-tips li {
+            color: #64748b;
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .download-tips li::before {
+            content: '💡';
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">📚</div>
+                    <span>极简书签管理器</span>
+                </div>
+                <nav class="nav">
+                    <a href="#download">插件下载</a>
+                    <a href="#features">功能特色</a>
+                    <a href="#installation">安装指南</a>
+                    <a href="#export">导出教程</a>
+                    <a href="#screenshots">界面预览</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="version-badge">🎉 最新版本 v3.3.0 - 专为Dia浏览器优化的大尺寸弹窗版</div>
+            <h1>极简书签管理器</h1>
+            <p>专为Dia浏览器量身定制的优雅书签管理解决方案<br>完美兼容Dia浏览器，支持智能导入、独立存储、双模式管理</p>
+            <div class="cta-buttons">
+                <a href="#download" class="btn btn-primary">
+                    📦 下载插件
+                </a>
+                <a href="#installation" class="btn btn-primary">
+                    🚀 立即安装
+                </a>
+                <a href="#export" class="btn btn-secondary">
+                    📥 导出教程
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <h2 class="section-title">📦 下载极简书签管理器</h2>
+            <div class="download-content">
+                <div class="download-card">
+                    <div class="download-header">
+                        <div class="download-icon">📚</div>
+                        <div class="download-info">
+                            <h3>极简书签管理器 v3.3.0</h3>
+                            <p>专为Dia浏览器优化的大尺寸弹窗版</p>
+                        </div>
+                    </div>
+                    <div class="download-features">
+                        <div class="download-feature">
+                            <span class="feature-check">✅</span>
+                            <span>450×800像素Dia专属界面</span>
+                        </div>
+                        <div class="download-feature">
+                            <span class="feature-check">✅</span>
+                            <span>完美兼容Dia浏览器</span>
+                        </div>
+                        <div class="download-feature">
+                            <span class="feature-check">✅</span>
+                            <span>支持Chrome/Edge书签导入</span>
+                        </div>
+                        <div class="download-feature">
+                            <span class="feature-check">✅</span>
+                            <span>安全隔离存储</span>
+                        </div>
+                    </div>
+                    <div class="download-actions">
+                        <button class="btn btn-primary download-btn" onclick="downloadPlugin()">
+                            📥 下载插件压缩包 (v3.3.0.zip)
+                        </button>
+                        <div class="download-info-text">
+                            <p>📁 文件大小: ~2.5MB | 💻 支持: Dia浏览器</p>
+                            <p>🔒 安全无毒 | 🆓 完全免费 | 📱 开箱即用</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="download-tips">
+                    <h4>💡 下载提示</h4>
+                    <ul>
+                        <li>下载后请解压到任意文件夹</li>
+                        <li>在Dia浏览器中加载解压后的文件夹</li>
+                        <li>建议先阅读下方的安装指南</li>
+                        <li>如有问题，请查看安装教程</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">✨ 专为Dia浏览器优化的核心功能</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🖼️</div>
+                    <h3>Dia浏览器专属体验</h3>
+                    <p>450×800像素大尺寸弹窗，专为Dia浏览器界面优化。完美融入Dia浏览器生态，提供原生般的操作体验。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📥</div>
+                    <h3>智能书签导入</h3>
+                    <p>完美支持从Chrome/Edge等浏览器导出的HTML书签文件，在Dia浏览器中实现无缝迁移。实测完美解析498个书签和27个文件夹。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>安全隔离存储</h3>
+                    <p>插件书签与Dia浏览器原生书签完全分离，独立存储。不会影响Dia浏览器的原有书签系统，确保数据安全。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌲</div>
+                    <h3>优化树形展示</h3>
+                    <p>针对Dia浏览器界面风格优化的树形结构展示，完美保留书签层级关系，提供流畅的展开/收起体验。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Dia双模式管理</h3>
+                    <p>专为Dia浏览器设计的双模式切换：管理插件独立书签或直接操作Dia浏览器原生书签系统。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛠️</div>
+                    <h3>Dia浏览器深度集成</h3>
+                    <p>与Dia浏览器深度集成，支持快速添加当前网页、智能搜索、右键菜单等原生级操作体验。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section id="installation" class="installation">
+        <div class="container">
+            <h2 class="section-title">🚀 Dia浏览器安装指南</h2>
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>打开Dia扩展管理</h3>
+                    <p>在Dia浏览器地址栏输入 <code>dia://extensions/</code> 并回车，进入Dia浏览器扩展程序管理页面。</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>开启开发者模式</h3>
+                    <p>点击Dia浏览器扩展页面右上角的"开发者模式"开关，启用开发者模式功能。</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>加载插件到Dia</h3>
+                    <p>点击"加载已解压的扩展程序"按钮，选择极简书签管理器插件文件夹，即可安装到Dia浏览器。</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>享受Dia优化体验</h3>
+                    <p>插件成功安装到Dia浏览器后，您可以在工具栏看到专属图标，点击即可享受为Dia优化的书签管理体验。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Export Guide Section -->
+    <section id="export" class="export-guide">
+        <div class="container">
+            <h2 class="section-title">📥 浏览器书签导出教程</h2>
+            <div class="guide-content">
+                <div class="guide-steps">
+                    <div class="guide-step">
+                        <div class="guide-step-number">1</div>
+                        <div class="guide-step-content">
+                            <h4>打开原浏览器书签管理器</h4>
+                            <p><strong>Chrome:</strong> 按 <code>Ctrl+Shift+O</code> 或访问 <code>chrome://bookmarks/</code><br>
+                            <strong>Edge:</strong> 按 <code>Ctrl+Shift+O</code> 或访问 <code>edge://favorites/</code><br>
+                            <strong>其他:</strong> 查看浏览器菜单中的书签管理选项</p>
+                        </div>
+                    </div>
+                    <div class="guide-step">
+                        <div class="guide-step-number">2</div>
+                        <div class="guide-step-content">
+                            <h4>找到导出功能</h4>
+                            <p>在书签管理器中找到导出选项，通常在右上角的菜单按钮或设置选项中</p>
+                        </div>
+                    </div>
+                    <div class="guide-step">
+                        <div class="guide-step-number">3</div>
+                        <div class="guide-step-content">
+                            <h4>导出为HTML格式</h4>
+                            <p>选择"导出书签"或"Export bookmarks"，保存为HTML格式文件</p>
+                        </div>
+                    </div>
+                    <div class="guide-step">
+                        <div class="guide-step-number">4</div>
+                        <div class="guide-step-content">
+                            <h4>保存导出文件</h4>
+                            <p>选择保存位置，建议命名为"bookmarks_日期.html"便于识别</p>
+                        </div>
+                    </div>
+                    <div class="guide-step">
+                        <div class="guide-step-number">5</div>
+                        <div class="guide-step-content">
+                            <h4>导入到Dia浏览器插件</h4>
+                            <p>在Dia浏览器中打开极简书签管理器，点击"导入"按钮，选择刚才导出的HTML文件，即可完成迁移</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="guide-image">
+                    <div class="guide-image-placeholder">
+                        🌐 各浏览器书签导出<br>
+                        → Dia浏览器导入<br>
+                        <small>一键迁移，无缝体验</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section id="screenshots" class="screenshots">
+        <div class="container">
+            <h2 class="section-title">📱 Dia浏览器界面预览</h2>
+            <div class="screenshots-grid">
+                <div class="screenshot">
+                    <div class="screenshot-image">📚 Dia主界面</div>
+                    <div class="screenshot-content">
+                        <h3>Dia浏览器专属界面</h3>
+                        <p>450×800像素大尺寸弹窗，完美融入Dia浏览器界面风格，提供原生般的操作体验。</p>
+                    </div>
+                </div>
+                <div class="screenshot">
+                    <div class="screenshot-image">🔍 智能搜索</div>
+                    <div class="screenshot-content">
+                        <h3>Dia优化搜索</h3>
+                        <p>针对Dia浏览器优化的搜索体验，支持书签标题和URL的快速模糊匹配。</p>
+                    </div>
+                </div>
+                <div class="screenshot">
+                    <div class="screenshot-image">📥 导入功能</div>
+                    <div class="screenshot-content">
+                        <h3>一键迁移到Dia</h3>
+                        <p>专为Dia浏览器优化的导入界面，支持从任意浏览器无缝迁移书签到Dia。</p>
+                    </div>
+                </div>
+                <div class="screenshot">
+                    <div class="screenshot-image">🔄 Dia双模式</div>
+                    <div class="screenshot-content">
+                        <h3>Dia专属双模式</h3>
+                        <p>独特的双模式设计：管理插件书签或直接操作Dia浏览器原生书签系统。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🎯 专为Dia浏览器打造</h3>
+                    <p>极简书签管理器是专门为Dia浏览器用户开发的书签管理扩展，深度集成Dia浏览器特性，提供原生级别的操作体验。</p>
+                </div>
+                <div class="footer-section">
+                    <h3>⚡ Dia优化技术</h3>
+                    <p>• 基于Chromium内核，完美兼容Dia<br>
+                    • 针对Dia界面风格优化设计<br>
+                    • 支持Dia浏览器所有书签操作<br>
+                    • 与Dia浏览器深度集成</p>
+                </div>
+                <div class="footer-section">
+                    <h3>🤝 Dia社区贡献</h3>
+                    <p>作为Dia浏览器生态的一部分，我们致力于为Dia用户提供最佳的书签管理体验。欢迎Dia用户反馈和建议！</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 极简书签管理器 - 专为Dia浏览器优化. 采用MIT许可证开源. 版本 v3.3.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Smooth Scroll Script -->
+    <script>
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(255, 255, 255, 0.98)';
+            } else {
+                header.style.background = 'rgba(255, 255, 255, 0.95)';
+            }
+        });
+
+        // Animate feature cards on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all feature cards
+        document.querySelectorAll('.feature-card, .step, .screenshot').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+
+        // Download Plugin Function
+        function downloadPlugin() {
+            // 这里可以配置实际的下载链接
+            const downloadUrl = './极简书签管理器-v3.3.0.zip'; // 实际插件文件路径
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = '极简书签管理器-v3.3.0.zip';
+            
+            // 添加下载统计（可选）
+            console.log('用户下载了插件 v3.3.0');
+            
+            // 如果文件不存在，显示提示信息
+            fetch(downloadUrl, { method: 'HEAD' })
+                .then(response => {
+                    if (response.ok) {
+                        // 文件存在，开始下载
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } else {
+                        // 文件不存在，显示提示
+                        alert('插件文件准备中，请稍后再试或联系开发者获取最新版本。\n\n您也可以：\n1. 查看下方的安装指南\n2. 关注项目更新\n3. 从GitHub等平台获取源码');
+                    }
+                })
+                .catch(error => {
+                    // 网络错误或文件不存在
+                    console.log('下载检查失败:', error);
+                    // 提供备用下载方式
+                    if (confirm('直接下载失败，是否打开备用下载页面？')) {
+                        // 这里可以配置备用下载地址，比如GitHub releases页面
+                        window.open('https://github.com/your-username/bookmark-manager/releases', '_blank');
+                    }
+                });
+        }
+
+        // 添加下载区域的动画
+        const downloadSection = document.querySelector('.download-card');
+        if (downloadSection) {
+            downloadSection.style.opacity = '0';
+            downloadSection.style.transform = 'translateY(30px)';
+            downloadSection.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(downloadSection);
+        }
+    </script>
+</body>
+</html> 

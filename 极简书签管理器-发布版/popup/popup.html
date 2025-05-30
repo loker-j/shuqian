@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>极简书签管理器</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 顶部操作栏 -->
+    <div class="header">
+      <div class="search-container">
+        <input type="text" id="searchInput" placeholder="搜索书签..." class="search-input">
+        <button id="clearSearch" class="clear-search-btn" style="display: none;">×</button>
+      </div>
+      <div class="action-buttons">
+        <input type="file" id="importInput" accept=".html" style="display: none;">
+        <button id="toggleModeBtn" class="btn btn-secondary" title="切换显示模式">
+          <span class="icon">🔄</span>
+          插件书签
+        </button>
+        <button id="importBtn" class="btn btn-secondary" title="导入书签文件">
+          <span class="icon">📁</span>
+          导入
+        </button>
+        <button id="addBookmarkBtn" class="btn btn-primary" title="添加当前页面为书签">
+          <span class="icon">⭐</span>
+          添加
+        </button>
+      </div>
+    </div>
+
+    <!-- 书签列表区域 -->
+    <div class="bookmark-list">
+      <div id="bookmarkTree" class="bookmark-tree"></div>
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">📚</div>
+        <p>暂无书签</p>
+        <p class="empty-hint">这是插件独立管理的书签系统，不会影响Chrome原有书签</p>
+        <p class="empty-hint">点击"导入"按钮导入HTML书签文件，或添加当前页面</p>
+      </div>
+      <div id="loadingState" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>加载中...</p>
+      </div>
+    </div>
+
+    <!-- 状态消息 -->
+    <div id="statusMessage" class="status-message"></div>
+
+    <!-- 右键菜单 -->
+    <div id="contextMenu" class="context-menu" style="display: none;">
+      <div class="menu-item" data-action="open">
+        <span class="menu-icon">🔗</span>
+        打开
+      </div>
+      <div class="menu-item" data-action="open-new-tab">
+        <span class="menu-icon">📑</span>
+        新标签页打开
+      </div>
+      <div class="menu-separator"></div>
+      <div class="menu-item" data-action="edit">
+        <span class="menu-icon">✏️</span>
+        编辑
+      </div>
+      <div class="menu-item" data-action="delete">
+        <span class="menu-icon">🗑️</span>
+        <span class="delete-text">删除</span>
+      </div>
+      <div class="menu-item chrome-delete-item" data-action="delete-chrome" style="display: none;">
+        <span class="menu-icon">🗑️</span>
+        <span style="color: #dc3545;">从Chrome删除</span>
+      </div>
+      <div class="menu-separator"></div>
+      <div class="menu-item" data-action="create-folder">
+        <span class="menu-icon">📁</span>
+        新建文件夹
+      </div>
+    </div>
+
+    <!-- 编辑对话框 -->
+    <div id="editModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="editModalTitle">编辑书签</h3>
+          <button class="modal-close" id="editModalClose">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="editTitle">标题</label>
+            <input type="text" id="editTitle" class="form-input">
+          </div>
+          <div class="form-group" id="editUrlGroup">
+            <label for="editUrl">链接</label>
+            <input type="url" id="editUrl" class="form-input">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="editModalCancel" class="btn btn-secondary">取消</button>
+          <button id="editModalSave" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自定义确认对话框（DIA浏览器兼容性） -->
+    <div id="confirmModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="confirmModalTitle">确认操作</h3>
+        </div>
+        <div class="modal-body">
+          <p id="confirmModalMessage"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmModalCancel" class="btn btn-secondary">取消</button>
+          <button id="confirmModalConfirm" class="btn btn-danger">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 
